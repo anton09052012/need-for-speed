@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гра Машинки</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+        }
+
+        canvas {
+            background-color: #2f2f2f;
+            border: 1px solid #000;
+        }
+
+        h1 {
+            position: absolute;
+            top: 10px;
+            color: white;
+            font-size: 24px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Гра Машинки</h1>
+<canvas id="gameCanvas" width="600" height="800"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const carWidth = 40;
+    const carHeight = 80;
+    let carX = canvas.width / 2 - carWidth / 2;
+    let carY = canvas.height - carHeight - 20;
+    let carSpeed = 5;
+    let isLeft = false;
+    let isRight = false;
+
+    const roadWidth = 300;
+    const roadX = (canvas.width - roadWidth) / 2;
+
+    let obstacles = [];
+    let obstacleSpeed = 5;
+    let score = 0;
+    let gameOver = false;
+
+    // Малюємо машинку
+    function drawCar() {
+        ctx.fillStyle = "red";
+        ctx.fillRect(carX, carY, carWidth, carHeight);
+    }
+
+    // Малюємо перешкоди
+    function drawObstacles() {
+        ctx.fillStyle = "black";
+        obstacles.forEach(obstacle => {
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        });
+    }
+
+    // Додаємо нові перешкоди
+    function generateObstacle() {
+        const width = Math.random() * 50 + 30;
+        const x = Math.random() * (roadWidth - width) + roadX;
+        const height = Math.random() * 30 + 40;
+        obstacles.push({ x, y: -height, width, height });
+    }
+
+    // Оновлюємо перешкоди
+    function updateObstacles() {
+        for (let i = 0; i < obstacles.length; i++) {
+            obstacles[i].y += obstacleSpeed;
+
+            if (obstacles[i].y > canvas.height) {
+                obstacles.splice(i, 1);
+                score++;
+            }
+        }
+    }
+
+    // Перевірка на зіткнення
+    function checkCollision() {
+        for (let i = 0; i < obstacles.length; i++) {
+            const obs = obstacles[i];
+
+            if (carX < obs.x + obs.width &&
+                carX + carWidth > obs.x &&
+                carY < obs.y + obs.height &&
+                carY + carHeight > obs.y) {
+                gameOver = true;
+                break;
+            }
+        }
+    }
+
+    // Малюємо дорогу
+    function drawRoad() {
+        ctx.fillStyle = "gray";
+        ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+
+        // Малюємо розмітку дороги
+        ctx.setLineDash([20, 20]);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    // Оновлюємо гру
+    function updateGame() {
+        if (gameOver) {
+            ctx.font = "50px Arial";
+            ctx.fillStyle = "red";
+            ctx.fillText("Гра закінчена!", canvas.width / 2 - 150, canvas.height / 2);
+            ctx.font = "20px Arial";
+            ctx.fillText(`Скорор: ${score}`, canvas.width / 2 - 40, canvas.height / 2 + 50);
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawRoad();
+        drawCar();
+        drawObstacles();
+        updateObstacles();
+        checkCollision();
+
+        // Відображаємо рахунок
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText(`Скорор: ${score}`, 10, 30);
+
+        // Генеруємо нову перешкоду кожні 60 кадрів
+        if (Math.random() < 0.02) {
+            generateObstacle();
+        }
+
+        // Оновлюємо позицію машинки
+        if (isLeft && carX > roadX) {
+            carX -= carSpeed;
+        } else if (isRight && carX < roadX + roadWidth - carWidth) {
+            carX += carSpeed;
+        }
+
+        requestAnimationFrame(updateGame);
+    }
+
+    // Обробник подій клавіатури
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+            isLeft = true;
+        } else if (event.key === 'ArrowRight') {
+            isRight = true;
+        }
+    });
+
+    document.addEventListener('keyup', (event) => {
+        if (event.key === 'ArrowLeft') {
+            isLeft = false;
+        } else if (event.key === 'ArrowRight') {
+            isRight = false;
+        }
+    });
+
+    // Початок гри
+    updateGame();
+</script>
+
+</body>
+</html>
